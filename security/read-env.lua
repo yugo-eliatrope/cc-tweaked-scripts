@@ -1,24 +1,25 @@
 local sensor = peripheral.find("environmentDetector") or peripheral.find("environment_detector")
 
 if not sensor then 
-    print("Ошибка: Радар не найден!") 
+    print("Error: Radar not found!") 
     return 
 end
 
-local entities = sensor.scanEntities() -- Пробуем вызвать без указания радиуса
+-- Passing the required radius (16 blocks)
+local entities = sensor.scanEntities(16) 
 
 if not entities or type(entities) ~= "table" then
-    print("Радар ничего не вернул (nil)")
+    print("Radar returned nothing (nil or empty)")
     return
 end
 
 local count = 0
 for _ in pairs(entities) do count = count + 1 end
-print("Всего сущностей вокруг: " .. count)
+print("Total entities around: " .. count)
 
--- Выводим структуру первой попавшейся сущности
+-- Print the raw data of the first entity found
 for _, e in pairs(entities) do
-    print("--- ДАННЫЕ МОБА ---")
+    print("--- MOB DATA ---")
     for k, v in pairs(e) do
         print(k .. ": " .. tostring(v))
     end
