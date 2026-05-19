@@ -23,7 +23,6 @@ local targetBlockName = startItem.name
 
 if turtle.getFuelLevel() < (width * height * 2 + width + height) then
     print("Warning: The robot might run out of fuel!")
-    print("Current level: " .. turtle.getFuelLevel())
 end
 
 local current_x = 0
@@ -47,7 +46,7 @@ end
 local function checkAndReplace()
     if not ensureBlock() then
         print("Error: Out of target blocks (" .. targetBlockName .. ")!")
-        return false
+        os.exit()
     end
 
     while true do
@@ -62,55 +61,51 @@ local function checkAndReplace()
             os.sleep(0.3)
         end
     end
-    return true
+end
+
+local function tryMove(moveFunc, digFunc, attackFunc)
+    while not moveFunc() do
+        if digFunc then digFunc() end
+        if attackFunc then attackFunc() end
+        os.sleep(0.5)
+    end
 end
 
 local function moveUp()
-    if turtle.up() then
-        current_y = current_y + 1
-        return true
-    end
-    return false
+    tryMove(turtle.up, turtle.digUp, turtle.attackUp)
+    current_y = current_y + 1
 end
 
 local function moveDown()
-    if turtle.down() then
-        current_y = current_y - 1
-        return true
-    end
-    return false
+    tryMove(turtle.down, turtle.digDown, turtle.attackDown)
+    current_y = current_y - 1
+end
+
+local function moveForward()
+    tryMove(turtle.forward, turtle.dig, turtle.attack)
 end
 
 local function shiftRight()
     turtle.turnRight()
-    if turtle.forward() then
-        current_x = current_x + 1
-    else
-        print("Error: Obstacle encountered while shifting right!")
-    end
+    moveForward()
+    current_x = current_x + 1
     turtle.turnLeft()
 end
 
 local function shiftLeft()
     turtle.turnLeft()
-    if turtle.forward() then
-        current_x = current_x - 1
-    else
-        print("Error: Obstacle encountered while shifting left!")
-    end
+    moveForward()
+    current_x = current_x - 1
     turtle.turnRight()
 end
 
 for i = 1, height - 1 do
-    if not moveUp() then
-        print("Error: Failed to reach the top row. Blocked at Y:"..current_y)
-        return
-    end
+    moveUp()
 end
 
 for row = 1, height do
     for col = 1, width do
-        if not checkAndReplace() then return end
+        checkAndReplace()
         
         if col < width then
             if row % 2 == 1 then
@@ -122,29 +117,20 @@ for row = 1, height do
     end
     
     if row < height then
-        if not moveDown() then
-            print("Error: Movement down blocked at X:"..current_x.." Y:"..current_y)
-            return
-        end
+        moveDown()
     end
 end
 
 print("Replacement complete. Returning to base...")
 
 while current_y > 0 do
-    if not moveDown() then
-        print("Critical error during return: path down blocked!")
-        break
-    end
+    moveDown()
 end
 
 if current_x > 0 then
     turtle.turnLeft()
     for i = 1, current_x do
-        while not turtle.forward() do 
-            print("Obstacle on the way to base! Waiting...")
-            os.sleep(1) 
-        end
+        moveForward()
     end
     turtle.turnRight()
 end
