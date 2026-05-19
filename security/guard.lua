@@ -15,13 +15,29 @@ local current_dir = 0 -- 0: North (-Z), 1: East (+X), 2: South (+Z), 3: West (-X
 local state = "IDLE"
 local current_target = nil
 
-local blacklist = {
-    ["minecraft:zombie"] = true,
-    ["minecraft:skeleton"] = true,
-    ["minecraft:spider"] = true,
-    ["minecraft:creeper"] = true,
-    ["minecraft:enderman"] = true
-}
+-- === ФУНКЦИИ ЛОГИРОВАНИЯ ===
+local function log(msg)
+    local time = os.date("%H:%M:%S")
+    print("["..time.."] " .. msg)
+end
+
+local function setState(newState)
+    if state ~= newState then
+        log("STATE: " .. state .. " -> " .. newState)
+        state = newState
+    end
+end
+
+-- Улучшенная проверка на врага (игнорирует регистр и приставки)
+local function isEnemy(name)
+    if type(name) ~= "string" then return false end
+    name = string.lower(name)
+    return string.find(name, "zombi") or 
+           string.find(name, "skeleton") or 
+           string.find(name, "spider") or 
+           string.find(name, "creeper") or
+           string.find(name, "enderman")
+end
 
 local function turnLeft()
     turtle.turnLeft()
@@ -35,10 +51,17 @@ local function turnRight()
 end
 
 local function tryMove(moveFunc, moveType)
+    local attempts = 0
     while not moveFunc() do
+        attempts = attempts + 1
         turtle.dig()
-        turtle.attack()
+        if turtle.attack() then
+            log("Attacked something while trying to move!")
+        end
         os.sleep(0.5)
+        if attempts > 10 then
+            log("WARNING: Stuck trying to move " .. moveType)
+        end
     end
     
     if moveType == "up" then 
@@ -76,6 +99,7 @@ local function turnTowards(target_x, target_z)
 end
 
 local function gotoAbsolute(tx, ty, tz)
+    log("Navigating to local coords -> X:"..tx.." Z:"..tz)
     while current_y < flight_y do moveUp() end
 
     while current_x ~= tx do
@@ -95,44 +119,58 @@ end
 
 local function scanForThreats()
     local entities = sensor.scanEntities(radius)
-    if not entities then return nil end
+    if not entities then 
+        return nil 
+    end
 
     for _, entity in pairs(entities) do
-        if blacklist[entity.name] then
+        if isEnemy(entity.name) then
+            -- Выводим сырые данные с сенсора
+            log("DETECTED: " .. tostring(entity.name) .. " | Raw sensor coords: X:" .. math.floor(entity.x) .. " Z:" .. math.floor(entity.z))
+            
             local abs_x = current_x + math.floor(entity.x + 0.5)
             local abs_y = current_y + math.floor(entity.y + 0.5)
             local abs_z = current_z + math.floor(entity.z + 0.5)
+            
+            -- Выводим, где робот думает находится моб относительно базы
+            log("Calculated internal coords -> X:" .. abs_x .. " Z:" .. abs_z)
             
             if abs_x >= min_x and abs_x <= max_x and abs_z >= min_z and abs_z <= max_z then
                 entity.abs_x = abs_x
                 entity.abs_y = abs_y
                 entity.abs_z = abs_z
+                log("TARGET LOCKED! Engaging...")
                 return entity
+            else
+                log("IGNORED: Mobs is outside of patrol boundaries (15 blocks).")
             end
         end
     end
     return nil
 end
 
+log("Starting Guard Protocol. Base initialized at (0,0,0)")
+
 while true do
     if turtle.getFuelLevel() < 50 or turtle.getItemCount(15) > 0 then
-        state = "RETURN_TO_BASE"
+        setState("RETURN_TO_BASE")
     end
 
     if state == "IDLE" then
         os.sleep(2)
         current_target = scanForThreats()
         if current_target then
-            state = "INTERCEPT"
+            setState("INTERCEPT")
         else
-            if math.random() > 0.8 then state = "PATROL_MOVE" end
+            if math.random() > 0.8 then setState("PATROL_MOVE") end
         end
 
     elseif state == "PATROL_MOVE" then
         local p_x = math.random(min_x, max_x)
         local p_z = math.random(min_z, max_z)
+        log("Patrolling to random point...")
         gotoAbsolute(p_x, flight_y, p_z)
-        state = "IDLE"
+        setState("IDLE")
 
     elseif state == "INTERCEPT" then
         if current_target then
@@ -142,17 +180,19 @@ while true do
             local verify = scanForThreats()
             if verify and verify.name == current_target.name then
                 current_target = verify
-                if dist <= 2 then state = "ENGAGE" end
+                if dist <= 2 then setState("ENGAGE") end
             else
+                log("Target lost or moved too far.")
                 current_target = nil
-                state = "RETURN_TO_BASE"
+                setState("RETURN_TO_BASE")
             end
         else
-            state = "RETURN_TO_BASE"
+            setState("RETURN_TO_BASE")
         end
 
     elseif state == "ENGAGE" then
         if current_target then
+            log("Attacking target!")
             turnTowards(current_target.abs_x, current_target.abs_z)
             turtle.attack()
             
@@ -170,16 +210,18 @@ while true do
             end
             
             if not still_alive then
+                log("Target eliminated. Collecting loot.")
                 os.sleep(0.5)
                 while turtle.suck() do end
                 current_target = nil
-                state = "RETURN_TO_BASE"
+                setState("RETURN_TO_BASE")
             end
         else
-            state = "RETURN_TO_BASE"
+            setState("RETURN_TO_BASE")
         end
 
     elseif state == "RETURN_TO_BASE" then
+        log("Returning to charging station...")
         gotoAbsolute(0, 0, 0)
         
         while current_dir ~= 0 do turnRight() end
@@ -193,6 +235,7 @@ while true do
             end
         end
         turtle.select(1)
-        state = "IDLE"
+        log("Maintenance complete. Resuming protocol.")
+        setState("IDLE")
     end
 end
