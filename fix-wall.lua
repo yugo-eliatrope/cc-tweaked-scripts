@@ -57,7 +57,17 @@ local function checkAndReplace()
         elseif data.name == targetBlockName then
             break
         else
-            turtle.dig()
+            local dug = turtle.dig()
+
+            if not dug then
+                if turtle.place() then
+                    break
+                else
+                    print("Error: Cannot remove or overwrite block: " .. data.name)
+                    os.exit()
+                end
+            end
+
             os.sleep(0.3)
         end
     end
