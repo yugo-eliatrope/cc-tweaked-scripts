@@ -1,9 +1,9 @@
 local modem = peripheral.find("modem")
-local sensor = peripheral.find("sensor")
+local sensor = peripheral.find("environmentDetector") or peripheral.find("environment_detector")
 
 if modem then rednet.open(peripheral.getName(modem)) end
 if not sensor then
-    print("Error: Advanced Peripherals Entity Sensor not found!")
+    print("Error: Advanced Peripherals Environment Detector not found!")
     return
 end
 
@@ -96,10 +96,19 @@ local function gotoAbsolute(tx, ty, tz)
 end
 
 local function scanForThreats()
-    local entities = sensor.sense()
+    local entities = sensor.scanEntities(radius)
+    if not entities then return nil end
+
     for _, entity in pairs(entities) do
         if blacklist[entity.name] then
-            if entity.x >= min_x and entity.x <= max_x and entity.z >= min_z and entity.z <= max_z then
+            local abs_x = current_x + math.floor(entity.x + 0.5)
+            local abs_y = current_y + math.floor(entity.y + 0.5)
+            local abs_z = current_z + math.floor(entity.z + 0.5)
+
+            if abs_x >= min_x and abs_x <= max_x and abs_z >= min_z and abs_z <= max_z then
+                entity.abs_x = abs_x
+                entity.abs_y = abs_y
+                entity.abs_z = abs_z
                 return entity
             end
         end
@@ -144,8 +153,8 @@ local function aiLoop()
 
         elseif state == "INTERCEPT" then
             if current_target then
-                gotoAbsolute(current_target.x, flight_y, current_target.z)
-                local dist = math.abs(current_x - current_target.x) + math.abs(current_z - current_target.z)
+                gotoAbsolute(current_target.abs_x, flight_y, current_target.abs_z)
+                local dist = math.abs(current_x - current_target.abs_x) + math.abs(current_z - current_target.abs_z)
                 
                 local verify = scanForThreats()
                 if verify and verify.name == current_target.name then
@@ -163,16 +172,24 @@ local function aiLoop()
 
         elseif state == "ENGAGE" then
             if current_target then
-                turnTowards(current_target.x, current_target.z)
+                turnTowards(current_target.abs_x, current_target.abs_z)
                 turtle.attack()
                 
                 local still_alive = false
-                local entities = sensor.sense()
-                for _, e in pairs(entities) do
-                    if e.uuid == current_target.uuid then still_alive = true break end
+                local entities = sensor.scanEntities(radius)
+                if entities then
+                    for _, e in pairs(entities) do
+                        if e.name == current_target.name and math.abs(e.x) <= 2 and math.abs(e.z) <= 2 then 
+                            still_alive = true 
+                            current_target.abs_x = current_x + math.floor(e.x + 0.5)
+                            current_target.abs_z = current_z + math.floor(e.z + 0.5)
+                            break 
+                        end
+                    end
                 end
                 
                 if not still_alive then
+                    os.sleep(0.5)
                     while turtle.suck() do end
                     current_target = nil
                     state = "RETURN_TO_BASE"
