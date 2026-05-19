@@ -12,6 +12,8 @@ if not width or not height or width <= 0 or height <= 0 then
     return
 end
 
+print("Burn Baby Burn!")
+
 local startItem = turtle.getItemDetail()
 if not startItem then
     print("Error: Select a slot with the replacement block first.")
@@ -48,12 +50,17 @@ local function checkAndReplace()
         return false
     end
 
-    local hasBlock, data = turtle.inspect()
-    if not hasBlock or data.name ~= targetBlockName then
-        if hasBlock then
+    while true do
+        local hasBlock, data = turtle.inspect()
+        if not hasBlock then
+            turtle.place()
+            break
+        elseif data.name == targetBlockName then
+            break
+        else
             turtle.dig()
+            os.sleep(0.3)
         end
-        turtle.place()
     end
     return true
 end
@@ -84,31 +91,41 @@ local function shiftRight()
     turtle.turnLeft()
 end
 
-for col = 1, width do
-    if col % 2 == 1 then
-        for row = 1, height do
-            if not checkAndReplace() then return end
-            if row < height then
-                if not moveUp() then
-                    print("Error: Movement up blocked at X:"..current_x.." Y:"..current_y)
-                    return
-                end
-            end
-        end
+local function shiftLeft()
+    turtle.turnLeft()
+    if turtle.forward() then
+        current_x = current_x - 1
     else
-        for row = 1, height do
-            if not checkAndReplace() then return end
-            if row < height then
-                if not moveDown() then
-                    print("Error: Movement down blocked at X:"..current_x.." Y:"..current_y)
-                    return
-                end
+        print("Error: Obstacle encountered while shifting left!")
+    end
+    turtle.turnRight()
+end
+
+for i = 1, height - 1 do
+    if not moveUp() then
+        print("Error: Failed to reach the top row. Blocked at Y:"..current_y)
+        return
+    end
+end
+
+for row = 1, height do
+    for col = 1, width do
+        if not checkAndReplace() then return end
+        
+        if col < width then
+            if row % 2 == 1 then
+                shiftRight()
+            else
+                shiftLeft()
             end
         end
     end
-
-    if col < width then
-        shiftRight()
+    
+    if row < height then
+        if not moveDown() then
+            print("Error: Movement down blocked at X:"..current_x.." Y:"..current_y)
+            return
+        end
     end
 end
 
@@ -124,9 +141,9 @@ end
 if current_x > 0 then
     turtle.turnLeft()
     for i = 1, current_x do
-        if not turtle.forward() then
+        while not turtle.forward() do 
             print("Obstacle on the way to base! Waiting...")
-            while not turtle.forward() do os.sleep(1) end
+            os.sleep(1) 
         end
     end
     turtle.turnRight()
