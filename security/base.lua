@@ -14,7 +14,7 @@ if not base_x then
     return
 end
 
-local radius = 20
+local radius = 16
 
 local function log(msg)
     local time = os.date("%H:%M:%S")
@@ -33,23 +33,31 @@ end
 
 log("Radar online. Calibrated at X:"..base_x.." Y:"..base_y.." Z:"..base_z)
 
+local function finClosestEntity(entities)
+    local closest = nil
+    local closestDist = math.huge
+    for _, e in pairs(entities) do
+        local dist = math.sqrt(e.x^2 + e.y^2 + e.z^2)
+        if dist < closestDist then
+            closestDist = dist
+            closest = e
+        end
+    end
+    return closest, closestDist
+end
+
 while true do
     local entities = sensor.scanEntities(radius)
     local target_found = false
 
     if entities then
-        for _, entity in pairs(entities) do
-            if isEnemy(entity.name) then
-                local abs_x = base_x + math.floor(entity.x + 0.5)
-                local abs_y = base_y + math.floor(entity.y + 0.5)
-                local abs_z = base_z + math.floor(entity.z + 0.5)
-                
-                rednet.broadcast({type = "target", x = abs_x, y = abs_y, z = abs_z, name = entity.name}, "guard_channel")
-                log("Target broadcast: " .. entity.name .. " at " .. abs_x .. ", " .. abs_z)
-                target_found = true
-                break 
-            end
-        end
+        local closest, closestDist = finClosestEntity(entities)
+        local abs_x = base_x + math.floor(closest.x + 0.5)
+        local abs_y = base_y + math.floor(closest.y)
+        local abs_z = base_z + math.floor(closest.z + 0.5)
+        rednet.broadcast({type = "target", x = abs_x, y = abs_y, z = abs_z, uuid = closest.uuid}, "guard_channel")
+        log("Closest entity: " .. tostring(closest.name) .. " at distance " .. string.format("%.2f", closestDist))
+        target_found = true
     end
 
     if not target_found then
