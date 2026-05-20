@@ -1,6 +1,8 @@
+local file = fs.open("guard_log.txt", "a")
 local function log(msg)
   local time = os.date("%H:%M:%S")
   print("["..time.."] " .. msg)
+  file.writeLine("["..time.."] " .. msg)
 end
 
 local modem = peripheral.find("modem")
