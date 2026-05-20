@@ -1,8 +1,13 @@
+local function log(msg)
+  local time = os.date("%H:%M:%S")
+  print("["..time.."] " .. msg)
+end
+
 local modem = peripheral.find("modem")
 local sensor = peripheral.find("environmentDetector") or peripheral.find("environment_detector")
 
 if not modem or not sensor then
-  print("Error: Modem or Environment Detector not found!")
+  log("Error: Modem or Environment Detector not found!")
   return
 end
 
@@ -10,16 +15,11 @@ rednet.open(peripheral.getName(modem))
 
 local base_x, base_y, base_z = gps.locate(2)
 if not base_x then
-  print("Error: GPS signal lost. Radar cannot calibrate.")
+  log("Error: GPS signal lost. Radar cannot calibrate.")
   return
 end
 
 local radius = 16
-
-local function log(msg)
-  local time = os.date("%H:%M:%S")
-  print("["..time.."] " .. msg)
-end
 
 local enemies = {"zombi", "skeleton", "spider", "creeper", "enderman"}
 

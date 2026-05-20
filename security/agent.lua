@@ -1,13 +1,18 @@
+local function log(msg)
+  local time = os.date("%H:%M:%S")
+  print("["..time.."] " .. msg)
+end
+
 local modem = peripheral.find("modem")
 if not modem then
-  print("Error: Modem not found!")
+  log("Error: Modem not found!")
   return
 end
 rednet.open(peripheral.getName(modem))
 
 local home_x, home_y, home_z = gps.locate(2)
 if not home_x then
-  print("Error: GPS signal lost. Cannot establish Home Base.")
+  log("Error: GPS signal lost. Cannot establish Home Base.")
   return
 end
 
@@ -18,11 +23,6 @@ local state = "IDLE"
 local channel_name = "guard_channel"
 
 local target = nil
-
-local function log(msg)
-  local time = os.date("%H:%M:%S")
-  print("["..time.."] " .. msg)
-end
 
 local function setState(newState)
   if state ~= newState then
@@ -209,13 +209,13 @@ while true do
 
   elseif state == "ENGAGE" and target then
     turnTowards(target.x, target.z)
-    print("Engaging target: " .. tostring(target.name) .. " at position X:" .. target.x .. " Y:" .. target.y .. " Z:" .. target.z .. ")")
-    print("Current position: X:" .. current_x .. " Y:" .. current_y .. " Z:" .. current_z)
+    log("Engaging target: " .. tostring(target.name) .. " at position X:" .. target.x .. " Y:" .. target.y .. " Z:" .. target.z .. ")")
+    log("Current position: X:" .. current_x .. " Y:" .. current_y .. " Z:" .. current_z)
     local gpsPos = gps.locate(2)
     if gpsPos then
-      print("GPS position: X:" .. gpsPos .. " Y:" .. gpsPos .. " Z:" .. gpsPos)
+      log("GPS position: X:" .. gpsPos .. " Y:" .. gpsPos .. " Z:" .. gpsPos)
     else
-      print("GPS signal lost during engagement!")
+      log("GPS signal lost during engagement!")
     end
     turtle.attack()
     turtle.attackUp()
