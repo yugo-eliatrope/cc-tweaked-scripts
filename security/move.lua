@@ -71,39 +71,28 @@ local function turnTowards(pos, x, z)
   end
   
   while current_dir ~= target_dir do
-    turnRight()
+    if target_dir == (current_dir + 1) % 4 then
+      turnRight()
+    else
+      turnLeft()
+    end
   end
 end
 
 local function gotoPosition(x, y, z)
   local pos = location()
-  if pos.x == x and pos.y == y and pos.z == z then return end
-  
-  if pos.y < flight_y then moveUp(flight_y - pos.y) end
-  while pos.x ~= x do
-    local dx = (x > pos.x) and 1 or -1
-    turnTowards(pos, pos.x + dx, pos.z)
-    turtle.forward(math.abs(x - pos.x))
-    pos = location()
-    if pos.x ~= x then
-      log("Probably hit an obstacle")
-      turtle.dig()
+  if pos.x ~= x or pos.y ~= y or pos.z ~= z then
+    if pos.y < flight_y then moveUp(flight_y - pos.y) end
+    while pos.x ~= x or pos.z ~= z do
+      turnTowards(pos, x, z)
+      turtle.forward()
     end
-  end
-  while pos.z ~= z do
-    local dz = (z > pos.z) and 1 or -1
-    turnTowards(pos, pos.x, pos.z + dz)
-    turtle.forward(math.abs(z - pos.z))
     pos = location()
-    if pos.z ~= z then
-      log("Probably hit an obstacle")
-      turtle.dig()
-    end
-  end
 
-  while pos.y > y do moveDown() end
-  while pos.y < y do moveUp() end
-  pos = location()
+    while pos.y > y do moveDown() end
+    while pos.y < y do moveUp() end
+    pos = location()
+  end
   log("Goal was:   (" .. x .. ", " .. y .. ", " .. z .. ")")
   log("Arrived to: (" .. pos.x .. ", " .. pos.y .. ", " .. pos.z .. ")")
 end
