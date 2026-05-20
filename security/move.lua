@@ -79,7 +79,7 @@ local function gotoPosition(x, y, z)
   local pos = location()
   if pos.x == x and pos.y == y and pos.z == z then return end
   
-  while pos.y < flight_y do moveUp() end
+  if pos.y < flight_y then moveUp(flight_y - pos.y) end
   while pos.x ~= x do
     local dx = (x > pos.x) and 1 or -1
     turnTowards(pos, pos.x + dx, pos.z)
@@ -110,8 +110,8 @@ end
 
 local args = { ... }
 
-local go_x = args[1]
-local go_y = args[2]
-local go_z = args[3]
+local go_x = tonumber(args[1])
+local go_y = tonumber(args[2])
+local go_z = tonumber(args[3])
 
 gotoPosition(go_x, go_y, go_z)
