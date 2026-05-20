@@ -92,7 +92,7 @@ local function gotoPosition(x, y, z)
   while pos.x ~= x do
     local dx = (x > pos.x) and 1 or -1
     turnTowards(pos, pos.x + dx, pos.z)
-    turtle.forward(Math.abs(x - pos.x))
+    turtle.forward(math.abs(x - pos.x))
     pos = location()
     if pos.x ~= x then
       log("Probably hit an obstacle")
@@ -102,7 +102,7 @@ local function gotoPosition(x, y, z)
   while pos.z ~= z do
     local dz = (z > pos.z) and 1 or -1
     turnTowards(pos, pos.x, pos.z + dz)
-    turtle.forward(Math.abs(z - pos.z))
+    turtle.forward(math.abs(z - pos.z))
     pos = location()
     if pos.z ~= z then
       log("Probably hit an obstacle")
@@ -222,9 +222,9 @@ while true do
     turnTowards(current, target.x, target.z)
     log("Engaging target: " .. tostring(target.name) .. " at position X:" .. target.x .. " Y:" .. target.y .. " Z:" .. target.z .. ")")
     log("Current position: X:" .. current.x .. " Y:" .. current.y .. " Z:" .. current.z)
-    local gpsPos = gps.locate(2)
+    local gpsPos = location()
     if gpsPos then
-      log("GPS position: X:" .. gpsPos .. " Y:" .. gpsPos .. " Z:" .. gpsPos)
+      log("GPS position: X:" .. gpsPos.x .. " Y:" .. gpsPos.y .. " Z:" .. gpsPos.z)
     else
       log("GPS signal lost during engagement!")
     end
