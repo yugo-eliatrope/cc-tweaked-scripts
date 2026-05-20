@@ -1,6 +1,8 @@
+local file = fs.open("guard.log", "a")
 local function log(msg)
   local time = os.date("%H:%M:%S")
   print("["..time.."] " .. msg)
+  file.writeLine("["..time.."] " .. msg)
 end
 
 local modem = peripheral.find("modem")
@@ -16,7 +18,7 @@ if not home_x then
   return
 end
 
-local flight_y = home_y + 2
+local flight_y = home_y + 1
 local current_dir = 0
 local state = "IDLE"
 local channel_name = "guard_channel"
@@ -80,61 +82,52 @@ local function turnTowards(pos, x, z)
   end
   
   while current_dir ~= target_dir do
-    turnRight()
+    if target_dir == (current_dir + 1) % 4 then
+      turnRight()
+    else
+      turnLeft()
+    end
   end
 end
 
 local function gotoPosition(x, y, z)
   local pos = location()
-  if pos.x == x and pos.y == y and pos.z == z then return end
-  
-  while pos.y < flight_y do moveUp() end
-  while pos.x ~= x do
-    local dx = (x > pos.x) and 1 or -1
-    turnTowards(pos, pos.x + dx, pos.z)
-    turtle.forward(math.abs(x - pos.x))
-    pos = location()
-    if pos.x ~= x then
-      log("Probably hit an obstacle")
-      turtle.dig()
+  if pos.x ~= x or pos.y ~= y or pos.z ~= z then
+    while pos.y < flight_y do
+      moveUp()
+      pos = location()
     end
-  end
-  while pos.z ~= z do
-    local dz = (z > pos.z) and 1 or -1
-    turnTowards(pos, pos.x, pos.z + dz)
-    turtle.forward(math.abs(z - pos.z))
-    pos = location()
-    if pos.z ~= z then
-      log("Probably hit an obstacle")
-      turtle.dig()
+    log("Y current: " .. pos.y .. ", target: " .. flight_y)
+    turnTowards(pos, x, z)
+    log("cycle 1")
+    while pos.x ~= x and pos.z ~= z do
+      log("POS:" .. pos.x .. "," .. pos.z .. " TAR:" .. x .. "," .. z)
+      turtle.forward()
+      pos = location()
     end
+    turnTowards(pos, x, z)
+    log("cycle 2")
+    while pos.x ~= x or pos.z ~= z do
+      log("POS:" .. pos.x .. "," .. pos.z .. " TAR:" .. x .. "," .. z)
+      turtle.forward()
+      pos = location()
+    end
+    while pos.y > y do
+      moveDown()
+      pos = location()
+    end
+    pos = location()
   end
-
-  while pos.y > y do moveDown() end
-  while pos.y < y do moveUp() end
+  log("Goal was:   (" .. x .. ", " .. y .. ", " .. z .. ")")
+  log("Arrived to: (" .. pos.x .. ", " .. pos.y .. ", " .. pos.z .. ")")
 end
 
 local function makeStepTowards(x, y, z)
   local curr = location()
   if curr.x == x and curr.y == y and curr.z == z then return end
-  
-  if curr.x ~= x or curr.z ~= z then
-    if curr.y < flight_y then
-      log("Ascending to flight level...")
-      moveUp(flight_y - curr.y)
-    end
 
-    local dx = (x > curr.x) and 1 or -1
-    local dz = (z > curr.z) and 1 or -1
-    
-    if math.abs(x - curr.x) > math.abs(z - curr.z) then
-      turnTowards(curr, curr.x + dx, curr.z)
-      moveForward()
-    else
-      turnTowards(curr, curr.x, curr.z + dz)
-      moveForward()
-    end
-  end
+  turnTowards(curr, x, z)
+  moveForward()
 end
 
 local function calibrateCompass()
@@ -213,6 +206,10 @@ while true do
   if state == "INTERCEPT" and target then
     local dist = math.abs(current.x - target.x) + math.abs(current.z - target.z)
     if dist > 1 then
+      if current.y < flight_y then
+        log("Ascending to flight level...")
+        moveUp(flight_y - current.y)
+      end
       makeStepTowards(target.x, flight_y, target.z)
     else
       setState("ENGAGE")
