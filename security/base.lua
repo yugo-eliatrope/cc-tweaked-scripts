@@ -84,7 +84,7 @@ while true do
       local abs_x = base_x + math.floor(target.x + 0.5)
       local abs_y = base_y + math.floor(target.y)
       local abs_z = base_z + math.floor(target.z + 0.5)
-      rednet.broadcast({type = "target", x = abs_x, y = abs_y, z = abs_z, uuid = target.uuid}, "guard_channel")
+      rednet.broadcast({type = "target", x = abs_x, y = abs_y, z = abs_z, uuid = target.uuid, name = target.name}, "guard_channel")
       log("Target entity: " .. tostring(target.name) .. " at distance " .. string.format("%.2f", calcDistance(target)))
     end
   end

@@ -17,7 +17,6 @@ if not home_x then
 end
 
 local flight_y = home_y + 2
-local current_x, current_y, current_z = home_x, home_y, home_z
 local current_dir = 0
 local state = "IDLE"
 local channel_name = "guard_channel"
@@ -70,9 +69,9 @@ local function moveUp() return tryMove(turtle.up, "up") end
 local function moveDown() return tryMove(turtle.down, "down") end
 local function moveForward() return tryMove(turtle.forward, "forward") end
 
-local function turnTowards(x, z)
-  local dx = x - current_x
-  local dz = z - current_z
+local function turnTowards(pos, x, z)
+  local dx = x - pos.x
+  local dz = z - pos.z
   local target_dir = current_dir
   
   if math.abs(dx) > math.abs(dz) then
@@ -87,29 +86,37 @@ local function turnTowards(x, z)
 end
 
 local function gotoPosition(x, y, z)
-  if current_x == x and current_y == y and current_z == z then return end
+  local pos = gps.locate(2)
+  if pos.x == x and pos.y == y and pos.z == z then return end
   
-  if current_x ~= x or current_z ~= z then
-    while current_y < flight_y do moveUp() end
-
-    while current_x ~= x do
-      local dx = (x > current_x) and 1 or -1
-      turnTowards(current_x + dx, current_z)
-      moveForward()
+  while pos.y < flight_y do moveUp() end
+  while pos.x ~= x do
+    local dx = (x > pos.x) and 1 or -1
+    turnTowards(pos, pos.x + dx, pos.z)
+    turtle.forward(Math.abs(x - pos.x))
+    pos = gps.locate(2)
+    if pos.x ~= x then
+      log("Probably hit an obstacle")
+      turtle.dig()
     end
-
-    while current_z ~= z do
-      local dz = (z > current_z) and 1 or -1
-      turnTowards(current_x, current_z + dz)
-      moveForward()
+  end
+  while pos.z ~= z do
+    local dz = (z > pos.z) and 1 or -1
+    turnTowards(pos, pos.x, pos.z + dz)
+    turtle.forward(Math.abs(z - pos.z))
+    pos = gps.locate(2)
+    if pos.z ~= z then
+      log("Probably hit an obstacle")
+      turtle.dig()
     end
   end
 
-  while current_y > y do moveDown() end
-  while current_y < y do moveUp() end
+  while pos.y > y do moveDown() end
+  while pos.y < y do moveUp() end
 end
 
 local function makeStepTowards(x, y, z)
+  local current_x, current_y, current_z = gps.locate(2)
   if current_x == x and current_y == y and current_z == z then return end
   
   if current_x ~= x or current_z ~= z then
@@ -136,6 +143,7 @@ local function calibrateCompass()
     elseif nz > home_z then current_dir = 2
     elseif nx < home_x then current_dir = 3
     end
+    log("Compass calibrated. Facing direction: " .. current_dir)
     turtle.back()
   end
 end
@@ -160,6 +168,7 @@ local returningForService = false
 
 while true do
   local id, msg = rednet.receive(channel_name, 0.5)
+  local current_x, current_y, current_z = gps.locate(2)
 
   if not returningForService and msg and type(msg) == "table" then
     if msg.type == "target" then
@@ -217,6 +226,7 @@ while true do
     else
       log("GPS signal lost during engagement!")
     end
+    turnTowards(target.x, target.z)
     turtle.attack()
     turtle.attackUp()
     turtle.attackDown()
