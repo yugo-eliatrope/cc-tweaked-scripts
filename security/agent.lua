@@ -119,9 +119,9 @@ local function makeStepTowards(x, y, z)
   if curr.x == x and curr.y == y and curr.z == z then return end
   
   if curr.x ~= x or curr.z ~= z then
-    while curr.y < flight_y do
+    if curr.y < flight_y then
       log("Ascending to flight level...")
-      moveUp()
+      moveUp(flight_y - curr.y)
     end
 
     local dx = (x > curr.x) and 1 or -1
@@ -170,7 +170,7 @@ local returningForService = false
 
 while true do
   local id, msg = rednet.receive(channel_name, 0.5)
-  local current_x, current_y, current_z = gps.locate(2)
+  local current = location()
 
   if not returningForService and msg and type(msg) == "table" then
     if msg.type == "target" then
@@ -211,7 +211,7 @@ while true do
   end
 
   if state == "INTERCEPT" and target then
-    local dist = math.abs(current_x - target.x) + math.abs(current_z - target.z)
+    local dist = math.abs(current.x - target.x) + math.abs(current.z - target.z)
     if dist > 1 then
       makeStepTowards(target.x, flight_y, target.z)
     else
@@ -219,16 +219,16 @@ while true do
     end
 
   elseif state == "ENGAGE" and target then
-    turnTowards(target.x, target.z)
+    turnTowards(current, target.x, target.z)
     log("Engaging target: " .. tostring(target.name) .. " at position X:" .. target.x .. " Y:" .. target.y .. " Z:" .. target.z .. ")")
-    log("Current position: X:" .. current_x .. " Y:" .. current_y .. " Z:" .. current_z)
+    log("Current position: X:" .. current.x .. " Y:" .. current.y .. " Z:" .. current.z)
     local gpsPos = gps.locate(2)
     if gpsPos then
       log("GPS position: X:" .. gpsPos .. " Y:" .. gpsPos .. " Z:" .. gpsPos)
     else
       log("GPS signal lost during engagement!")
     end
-    turnTowards(target.x, target.z)
+    turnTowards(current, target.x, target.z)
     turtle.attack()
     turtle.attackUp()
     turtle.attackDown()
