@@ -61,16 +61,6 @@ local function tryMove(moveFunc, moveType)
     os.sleep(0.3)
     if attempts > 5 then return false end
   end
-  
-  if moveType == "up" then current_y = current_y + 1
-  elseif moveType == "down" then current_y = current_y - 1
-    elseif moveType == "forward" then
-      if current_dir == 0 then current_z = current_z - 1
-      elseif current_dir == 1 then current_x = current_x + 1
-      elseif current_dir == 2 then current_z = current_z + 1
-      elseif current_dir == 3 then current_x = current_x - 1
-    end
-  end
   return true
 end
 
@@ -129,7 +119,10 @@ local function makeStepTowards(x, y, z)
   if current_x == x and current_y == y and current_z == z then return end
   
   if current_x ~= x or current_z ~= z then
-    while current_y < flight_y do moveUp() end
+    while current_y < flight_y do
+      log("Ascending to flight level...")
+      moveUp()
+    end
 
     local dx = (x > current_x) and 1 or -1
     local dz = (z > current_z) and 1 or -1
