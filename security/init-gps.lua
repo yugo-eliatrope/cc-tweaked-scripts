@@ -1,12 +1,12 @@
-local x = 10
-local y = 5
-local z = 10
+local x, y, z = 23, 65, -33
 
-parallel.waitForAny(
-  function()
-    shell.run("gps host" .. " " .. x .. " " .. y .. " " .. z)
-  end,
-  function()
-    print("GPS tower initialized at X:" .. x .. " Y:" .. y .. " Z:" .. z)
-  end
-)
+local modem = peripheral.find("modem")
+if not modem then
+  print("No modem found!")
+  return
+end
+
+modem.open(gps.CHANNEL_GPS)
+
+print("Starting GPS tower at coordinates: " .. x .. ", " .. y .. ", " .. z)
+gps.host(x, y, z)
