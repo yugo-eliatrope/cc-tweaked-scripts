@@ -115,23 +115,23 @@ local function gotoPosition(x, y, z)
 end
 
 local function makeStepTowards(x, y, z)
-  local current_x, current_y, current_z = gps.locate(2)
-  if current_x == x and current_y == y and current_z == z then return end
+  local curr = location()
+  if curr.x == x and curr.y == y and curr.z == z then return end
   
-  if current_x ~= x or current_z ~= z then
-    while current_y < flight_y do
+  if curr.x ~= x or curr.z ~= z then
+    while curr.y < flight_y do
       log("Ascending to flight level...")
       moveUp()
     end
 
-    local dx = (x > current_x) and 1 or -1
-    local dz = (z > current_z) and 1 or -1
+    local dx = (x > curr.x) and 1 or -1
+    local dz = (z > curr.z) and 1 or -1
     
-    if math.abs(x - current_x) > math.abs(z - current_z) then
-      turnTowards(current_x + dx, current_z)
+    if math.abs(x - curr.x) > math.abs(z - curr.z) then
+      turnTowards(curr, curr.x + dx, curr.z)
       moveForward()
     else
-      turnTowards(current_x, current_z + dz)
+      turnTowards(curr, curr.x, curr.z + dz)
       moveForward()
     end
   end
