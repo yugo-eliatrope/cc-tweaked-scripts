@@ -84,7 +84,10 @@ end
 local function gotoPosition(x, y, z)
   local pos = location()
   if pos.x ~= x or pos.y ~= y or pos.z ~= z then
-    if pos.y < flight_y then moveUp(flight_y - pos.y) end
+    while pos.y < flight_y do
+      moveUp()
+      pos = location()
+    end
     log("Y current: " .. pos.y .. ", target: " .. flight_y)
     turnTowards(pos, x, z)
     log("cycle 1")
@@ -100,8 +103,10 @@ local function gotoPosition(x, y, z)
       turtle.forward()
       pos = location()
     end
-    while pos.y > y do moveDown() end
-    while pos.y < y do moveUp() end
+    while pos.y > y do
+      moveDown()
+      pos = location()
+    end
     pos = location()
   end
   log("Goal was:   (" .. x .. ", " .. y .. ", " .. z .. ")")
