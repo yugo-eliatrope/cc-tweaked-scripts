@@ -72,7 +72,7 @@ while true do
     if target then
       target = updateTarget(target, entities)
     else
-      local closest = finClosestEntity(entities)
+      local closest = finClosestEnemy(entities)
       if not closest then
         log("No enemies detected within radius.")
         target = nil
