@@ -114,4 +114,18 @@ local go_x = tonumber(args[1])
 local go_y = tonumber(args[2])
 local go_z = tonumber(args[3])
 
+local function calibrateCompass()
+  if turtle.forward() then
+    local nx, ny, nz = gps.locate(2)
+    if nz < home_z then current_dir = 0
+    elseif nx > home_x then current_dir = 1
+    elseif nz > home_z then current_dir = 2
+    elseif nx < home_x then current_dir = 3
+    end
+    log("Compass calibrated. Facing direction: " .. current_dir)
+    turtle.back()
+  end
+end
+
+calibrateCompass()
 gotoPosition(go_x, go_y, go_z)
