@@ -23,6 +23,15 @@ local channel_name = "guard_channel"
 
 local target = nil
 
+local function location()
+  local x, y, z = gps.locate(2)
+  if not x then
+    log("Error: GPS signal lost!")
+    return nil
+  end
+  return {x = x, y = y, z = z}
+end
+
 local function setState(newState)
   if state ~= newState then
     log("STATE: " .. state .. " -> " .. newState)
@@ -86,7 +95,7 @@ local function turnTowards(pos, x, z)
 end
 
 local function gotoPosition(x, y, z)
-  local pos = gps.locate(2)
+  local pos = location()
   if pos.x == x and pos.y == y and pos.z == z then return end
   
   while pos.y < flight_y do moveUp() end
@@ -94,7 +103,7 @@ local function gotoPosition(x, y, z)
     local dx = (x > pos.x) and 1 or -1
     turnTowards(pos, pos.x + dx, pos.z)
     turtle.forward(Math.abs(x - pos.x))
-    pos = gps.locate(2)
+    pos = location()
     if pos.x ~= x then
       log("Probably hit an obstacle")
       turtle.dig()
@@ -104,7 +113,7 @@ local function gotoPosition(x, y, z)
     local dz = (z > pos.z) and 1 or -1
     turnTowards(pos, pos.x, pos.z + dz)
     turtle.forward(Math.abs(z - pos.z))
-    pos = gps.locate(2)
+    pos = location()
     if pos.z ~= z then
       log("Probably hit an obstacle")
       turtle.dig()
