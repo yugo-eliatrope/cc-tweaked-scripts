@@ -57,6 +57,12 @@ local function tryMove(moveFunc, moveType)
   while not moveFunc() do
     attempts = attempts + 1
 
+    local cur = location()
+    if cur and target then
+      log("TUR: " .. cur.x .. "," .. cur.y .. "," .. cur.z)
+      log("OBS: " .. target.x .. "," .. target.y .. "," .. target.z)
+    end
+
     if moveType == "up" then
       turtle.attackUp()
     elseif moveType == "down" then
@@ -65,11 +71,8 @@ local function tryMove(moveFunc, moveType)
       turtle.attack()
     end
 
-    os.sleep(0.1) 
-
-    if attempts >= 2 then
-      return false
-    end
+    os.sleep(0.1)
+    if attempts >= 2 then return false end
   end
   return true
 end
@@ -240,6 +243,12 @@ while true do
     end
 
   elseif state == "ENGAGE" and target then
+    local current = location()
+    if current then
+      log("TUR: " .. current.x .. "," .. current.y .. "," .. current.z)
+      log("GOL: " .. target.x .. "," .. target.y .. "," .. target.z)
+    end
+
     turnTowards(current, target.x, target.z)
 
     if not moveForward() then
@@ -249,8 +258,9 @@ while true do
     turtle.attackUp()
     turtle.attackDown()
 
-    local newDist = math.abs(current.x - target.x) + math.abs(current.z - target.z)
-    if newDist > 0 then
+    local postMove = location()
+    local dist = math.abs(postMove.x - target.x) + math.abs(postMove.z - target.z)
+    if dist > 0 then
       setState("INTERCEPT")
     end
 
