@@ -56,12 +56,20 @@ local function tryMove(moveFunc, moveType)
   local attempts = 0
   while not moveFunc() do
     attempts = attempts + 1
-    turtle.dig()
-    if turtle.attack() then
-      log("Hit obstacle.")
+
+    if moveType == "up" then
+      turtle.attackUp()
+    elseif moveType == "down" then
+      turtle.attackDown()
+    else
+      turtle.attack()
     end
-    os.sleep(0.3)
-    if attempts > 5 then return false end
+
+    os.sleep(0.1) 
+
+    if attempts >= 2 then
+      return false
+    end
   end
   return true
 end
@@ -92,32 +100,49 @@ end
 
 local function gotoPosition(x, y, z)
   local pos = location()
+  if not pos then return end
+
   if pos.x ~= x or pos.y ~= y or pos.z ~= z then
     while pos.y < flight_y do
-      moveUp()
+      if not moveUp() then break end
       pos = location()
     end
+
     log("Y current: " .. pos.y .. ", target: " .. flight_y)
+
+    local function moveForwardWithBypass()
+      while not turtle.forward() do
+        log("Path blocked! Climbing to bypass...")
+        if not turtle.up() then
+          log("Critical Error: Stuck! Cannot move up or forward.")
+          return false
+        end
+        --After climbing, the loop will check turtle.forward() again
+      end
+      return true
+    end
+
     turnTowards(pos, x, z)
     log("cycle 1")
     while pos.x ~= x and pos.z ~= z do
-      log("POS:" .. pos.x .. "," .. pos.z .. " TAR:" .. x .. "," .. z)
-      turtle.forward()
+      moveForwardWithBypass()
       pos = location()
     end
+
     turnTowards(pos, x, z)
     log("cycle 2")
     while pos.x ~= x or pos.z ~= z do
-      log("POS:" .. pos.x .. "," .. pos.z .. " TAR:" .. x .. "," .. z)
-      turtle.forward()
+      moveForwardWithBypass()
       pos = location()
     end
+
     while pos.y > y do
-      moveDown()
+      if not moveDown() then break end
       pos = location()
     end
     pos = location()
   end
+
   log("Goal was:   (" .. x .. ", " .. y .. ", " .. z .. ")")
   log("Arrived to: (" .. pos.x .. ", " .. pos.y .. ", " .. pos.z .. ")")
 end
