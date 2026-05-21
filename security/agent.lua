@@ -1,3 +1,4 @@
+-- v0.2
 local file = fs.open("guard.log", "a")
 local function log(msg)
   local time = os.date("%H:%M:%S")
