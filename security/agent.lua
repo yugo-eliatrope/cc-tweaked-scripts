@@ -1,4 +1,4 @@
--- v0.2
+-- v0.2.1
 local file = fs.open("guard.log", "a")
 local function log(msg)
   local time = os.date("%H:%M:%S")
@@ -244,20 +244,20 @@ while true do
     end
 
   elseif state == "ENGAGE" and target then
-    local current = location()
-    if current then
-      log("TUR: " .. current.x .. "," .. current.y .. "," .. current.z)
-      log("GOL: " .. target.x .. "," .. target.y .. "," .. target.z)
-    end
+    current = location()
+    log("TUR: " .. current.x .. "," .. current.y .. "," .. current.z)
+    log("GOL: " .. target.x .. "," .. target.y .. "," .. target.z)
 
     turnTowards(current, target.x, target.z)
-
-    if not moveForward() then
-      turtle.attack()
-    end
-
-    turtle.attackUp()
-    turtle.attackDown()
+    local att1 = turtle.attack()
+    local att2 = turtle.attackUp()
+    local att3 = turtle.attackDown()
+    log("Attacks successful:" .. tostring(att1 or att2 or att3))
+    -- if not moveForward() then
+    --   turtle.attack()
+    --   turtle.attackUp()
+    --   turtle.attackDown()
+    -- end
 
     local postMove = location()
     local dist = math.abs(postMove.x - target.x) + math.abs(postMove.z - target.z)
