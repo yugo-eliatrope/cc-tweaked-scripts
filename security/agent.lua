@@ -230,10 +230,9 @@ while true do
 
   if state == "INTERCEPT" and target then
     local dist = math.abs(current.x - target.x) + math.abs(current.z - target.z)
-    if dist > 1 then
+    if dist > 0 then 
       if current.y < flight_y then
-        log("Ascending to flight level...")
-        moveUp(flight_y - current.y)
+        moveUp()
       end
       makeStepTowards(target.x, flight_y, target.z)
     else
@@ -242,18 +241,18 @@ while true do
 
   elseif state == "ENGAGE" and target then
     turnTowards(current, target.x, target.z)
-    log("Engaging target: " .. tostring(target.name) .. " at position X:" .. target.x .. " Y:" .. target.y .. " Z:" .. target.z .. ")")
-    log("Current position: X:" .. current.x .. " Y:" .. current.y .. " Z:" .. current.z)
-    local gpsPos = location()
-    if gpsPos then
-      log("GPS position: X:" .. gpsPos.x .. " Y:" .. gpsPos.y .. " Z:" .. gpsPos.z)
-    else
-      log("GPS signal lost during engagement!")
+
+    if not moveForward() then
+      turtle.attack()
     end
-    turnTowards(current, target.x, target.z)
-    turtle.attack()
+
     turtle.attackUp()
     turtle.attackDown()
+
+    local newDist = math.abs(current.x - target.x) + math.abs(current.z - target.z)
+    if newDist > 0 then
+      setState("INTERCEPT")
+    end
 
   elseif state == "RETURN_TO_BASE" then
     gotoPosition(home_x, home_y, home_z)
